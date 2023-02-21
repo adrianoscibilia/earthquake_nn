@@ -11,7 +11,7 @@ from sklearn.metrics import classification_report
 from IPython.display import clear_output
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+# NN model for earthquake damage evaluation
 
 class FullyConnectedNN(nn.Module):
     def __init__(self, input_len, output_len, hidden_dim, depth):
