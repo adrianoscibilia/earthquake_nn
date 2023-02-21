@@ -10,8 +10,9 @@ from tqdm import tqdm
 from sklearn.metrics import classification_report
 from IPython.display import clear_output
 
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # NN model for earthquake damage evaluation
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class FullyConnectedNN(nn.Module):
     def __init__(self, input_len, output_len, hidden_dim, depth):
@@ -85,8 +86,8 @@ class FocalLoss(nn.Module):
             return F_loss
 
 
-# dataframe = pd.read_csv('signature_dataframe.csv')
-dataframe = pd.read_pickle('./earthquake_ml/signature_condensed_dataframe.pkl')
+# dataframe = pd.read_csv('dataframe_signature.csv')
+dataframe = pd.read_pickle('./signature_condensed_dataframe.pkl')
 dataframe.head()
 
 dataset = CustomDataset(dataframe)
@@ -108,14 +109,14 @@ weights = torch.Tensor(weights).to(DEVICE)
 
 ALPHA = torch.ones(N_CLASSES).to(DEVICE)/weights
 # clamp alpha to avoid exessive weight on rare classes
-ALPHA = ALPHA.clamp(min(ALPHA).item(), max(ALPHA).item()) # multiply by 0.x to avoid overfitting
+ALPHA = ALPHA.clamp(min(ALPHA).item(), max(ALPHA).item())  # multiply by 0.x to avoid overfitting
 # normalize alpha
 ALPHA = ALPHA/ALPHA.sum()
 
 
 class FocalLossWithClassBalancing(nn.Module):
     def __init__(self, alpha=ALPHA, gamma=2,
-                 reduction='elementwise_mean'):  # <----------------------------- alpha should be a list/tensor of length N_CLASSES
+                 reduction='elementwise_mean'):  # <--------------- alpha should be a list/tensor of length N_CLASSES
         super(FocalLossWithClassBalancing, self).__init__()
         self.gamma = gamma
         self.reduction = reduction
@@ -213,15 +214,15 @@ def train(model, train_dataloader, test_dataloader, loss_fn, optimizer, num_epoc
 
         test_scores.append(classification_report(y_true, y_pred, zero_division=0, output_dict=True))
 
-        if epoch == (num_epochs-1):
+        if (epoch + 1) % log_interval == 0:
             clear_output(wait=True)
 
-            # plot training loss
-            fig, ax = plt.subplots()
-            ax.plot(train_losses, label='Training Loss')
-            ax.set_xlabel('Epoch')
-            ax.set_ylabel('Loss')
-            ax.legend()
+            # # plot training loss
+            # fig, ax = plt.subplots()
+            # ax.plot(train_losses, label='Training Loss')
+            # ax.set_xlabel('Epoch')
+            # ax.set_ylabel('Loss')
+            # ax.legend()
 
             # plot testing loss
             fig, ax = plt.subplots()
@@ -240,19 +241,19 @@ def train(model, train_dataloader, test_dataloader, loss_fn, optimizer, num_epoc
             ax.set_ylabel('Score')
             ax.legend()
 
-            # plot average precision score
-            fig, ax = plt.subplots()
-            ax.plot([score['macro avg']['precision'] for score in test_scores], label='Testing Precision Score Macro Avg')
-            ax.set_xlabel('Epoch')
-            ax.set_ylabel('Precision Score')
-            ax.legend()
-
-            # plot average recall score
-            fig, ax = plt.subplots()
-            ax.plot([score['macro avg']['recall'] for score in test_scores], label='Testing Recall Score Macro Avg')
-            ax.set_xlabel('Epoch')
-            ax.set_ylabel('Recall Score')
-            ax.legend()
+            # # plot average precision score
+            # fig, ax = plt.subplots()
+            # ax.plot([score['macro avg']['precision'] for score in test_scores], label='Testing Precision Score Macro Avg')
+            # ax.set_xlabel('Epoch')
+            # ax.set_ylabel('Precision Score')
+            # ax.legend()
+            #
+            # # plot average recall score
+            # fig, ax = plt.subplots()
+            # ax.plot([score['macro avg']['recall'] for score in test_scores], label='Testing Recall Score Macro Avg')
+            # ax.set_xlabel('Epoch')
+            # ax.set_ylabel('Recall Score')
+            # ax.legend()
 
             # plot f1 score for each class
             fig, ax = plt.subplots()
@@ -268,10 +269,30 @@ def train(model, train_dataloader, test_dataloader, loss_fn, optimizer, num_epoc
                 f"Epoch {epoch + 1}/{num_epochs}: Training Loss: {train_loss:.4f} Test Loss: {test_loss:.4f} \nTest Score:\n {test_score} ")
 
 
+class MLPNN(torch.nn.Module):
+    def __init__(self, D_in, H, D_out):
+        super(MLPNN, self).__init__()
+        self.linear1 = torch.nn.Linear(D_in, H)
+        self.linear2 = torch.nn.Linear(H, H)
+        self.linear3 = torch.nn.Linear(H, H)
+        self.linear4 = torch.nn.Linear(H, H)
+        self.linear5 = torch.nn.Linear(H, D_out)
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.linear2(F.relu(x))
+        x = self.linear3(F.relu(x))
+        x = self.linear4(F.relu(x))
+        y_pred = self.linear5(x)
+        return y_pred
+
+
+
+
 model = FullyConnectedNN(input_len=len(dataset[0][0]), output_len=len(dataset[0][1]), hidden_dim=15, depth=8)
 # model = pickle.load(open('model.pkl', 'rb'))
 
-train(model, train_loader, test_loader, BalancedBCELoss(), optim.Adam(model.parameters(), lr=0.0001), num_epochs=500, log_interval=1)
+train(model, train_loader, test_loader, BalancedBCELoss(), optim.Adam(model.parameters(), lr=1e-5), num_epochs=1000, log_interval=1000)
 
 # save model
-pickle.dump(model, open('model_narrow_condensed.pkl', 'wb'))
+pickle.dump(model, open('model_lr5_.pkl', 'wb'))
