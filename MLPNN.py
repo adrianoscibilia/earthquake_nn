@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from IPython.display import clear_output
-
+import re
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 N_CLASSES = 4  # set equal to output
@@ -136,33 +136,29 @@ def train(model, epochs, train_loader, val_loader, log_interval, l_rate):
 
 
 # dataframe = pd.read_pickle('./signature_condensed_dataframe.pkl')
-dataframe = pd.read_csv('./dataframe_signature.csv')
-# dataframe.head()
+dataframe = pd.read_csv(filepath_or_buffer='./dataframe_signature.csv')
+dataframe.head()
 # dataset = CustomDataset(dataframe)
 X = dataframe["x"]
 Y = dataframe["y"]
-data = np.vstack((X, Y))
-xdata = []
-ydata = []
-for idx in range(len(data[0,:])):
-    xdata.append(data[0,idx])
-    ydata.append(data[1,idx])
-data_matrix = np.array(data)
-print("dataset size: ", data_matrix.shape)
-print("dataset size: ", np.array(xdata).shape)
-print("dataset size: ", np.array(ydata).shape)
-
-# train_dataset, test_dataset = dataset.train_test_split()
-X_train, X_tmp, y_train, y_tmp = train_test_split(xdata, ydata, test_size=0.2, random_state=113)
+data_x, data_y = np.empty((len(X), len(X[0]))), np.empty((len(Y), len(Y[0])))
+tmp_x, tmp_y = np.empty(len(X[0])), np.empty(len(Y[0]))
+for row in range(len(X)):
+    tmp_x = re.sub(r'\U00002013+', '-', X[row])
+    tmp_y = re.sub(r'\U00002013+', '-', Y[row])
+    data_x = np.append(data_x, float(X[row]))
+    data_y = np.append(data_y, float(Y[row]))
+X_train, X_tmp, y_train, y_tmp = train_test_split(data_x, data_y, test_size=0.2, random_state=113)
 X_val, X_test, y_val, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=113)
 
-train_dataset = Data.TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).float())
-val_dataset = Data.TensorDataset(torch.from_numpy(X_val).float(), torch.from_numpy(y_val).float())
+# train_dataset, test_dataset = dataset.train_test_split()
+train_dataset = Data.TensorDataset(torch.from_numpy(np.array(X_train, dtype=float)).float(), torch.from_numpy(np.array(y_train, dtype=float)).float())
+val_dataset = Data.TensorDataset(torch.from_numpy(np.array(X_val, dtype=float)).float(), torch.from_numpy(np.array(y_val, dtype=float)).float())
 
 print("train dataset size: ", np.array(train_dataset).shape)
 print("test dataset size: ", np.array(val_dataset).shape)
 
-D_in, H, D_out = len(xdata), 15, len(ydata)
+D_in, H, D_out = len(data_x), 15, len(data_y)
 batch = 1000
 
 train_loader = Data.DataLoader(dataset=train_dataset, batch_size=batch, shuffle=True)
