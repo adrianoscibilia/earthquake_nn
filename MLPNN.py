@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from IPython.display import clear_output
-import re
+from ast import literal_eval
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 N_CLASSES = 4  # set equal to output
@@ -141,20 +141,19 @@ dataframe.head()
 # dataset = CustomDataset(dataframe)
 X = dataframe["x"]
 Y = dataframe["y"]
-data_x, data_y = np.empty((len(X), len(X[0]))), np.empty((len(Y), len(Y[0])))
-tmp_x, tmp_y = np.empty(len(X[0])), np.empty(len(Y[0]))
+data_x, data_y = np.empty((0, X.size)), np.empty((0, Y.size))
 for row in range(len(X)):
-    tmp_x = re.sub(r'\U00002013+', '-', X[row])
-    tmp_y = re.sub(r'\U00002013+', '-', Y[row])
-    data_x = np.append(data_x, float(X[row]))
-    data_y = np.append(data_y, float(Y[row]))
+    data_x= np.append(data_x, np.array(literal_eval(X[row])))
+    data_y = np.append(data_y, np.array(literal_eval(Y[row])))
 X_train, X_tmp, y_train, y_tmp = train_test_split(data_x, data_y, test_size=0.2, random_state=113)
 X_val, X_test, y_val, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=113)
 
 # train_dataset, test_dataset = dataset.train_test_split()
-train_dataset = Data.TensorDataset(torch.from_numpy(np.array(X_train, dtype=float)).float(), torch.from_numpy(np.array(y_train, dtype=float)).float())
-val_dataset = Data.TensorDataset(torch.from_numpy(np.array(X_val, dtype=float)).float(), torch.from_numpy(np.array(y_val, dtype=float)).float())
+train_dataset = Data.TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).float())
+val_dataset = Data.TensorDataset(torch.from_numpy(X_val).float(), torch.from_numpy(y_val).float())
 
+print("data_x size: ", data_x.shape)
+print("data_y size: ", data_y.shape)
 print("train dataset size: ", np.array(train_dataset).shape)
 print("test dataset size: ", np.array(val_dataset).shape)
 
