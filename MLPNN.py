@@ -141,13 +141,14 @@ dataframe.head()
 # dataset = CustomDataset(dataframe)
 X = dataframe["x"]
 Y = dataframe["y"]
-data_x, data_y = np.empty((0, X.size)), np.empty((0, Y.size))
-for row in range(len(X)):
-    data_x= np.append(data_x, np.array(literal_eval(X[row])))
-    data_y = np.append(data_y, np.array(literal_eval(Y[row])))
+data_x, data_y = np.empty((0, len(X.values))), np.empty((0, len(Y.values)))
+for row in range(len(X.values)):
+    data_x= np.append(data_x, np.array(literal_eval(X[row])), axis=0)
+    data_y = np.append(data_y, np.array(literal_eval(Y[row])), axis=0)
 X_train, X_tmp, y_train, y_tmp = train_test_split(data_x, data_y, test_size=0.2, random_state=113)
 X_val, X_test, y_val, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=113)
-
+np.save('X_converted', data_x, allow_pickle =False)
+np.save('Y_converted', data_y, allow_pickle =False)
 # train_dataset, test_dataset = dataset.train_test_split()
 train_dataset = Data.TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).float())
 val_dataset = Data.TensorDataset(torch.from_numpy(X_val).float(), torch.from_numpy(y_val).float())
