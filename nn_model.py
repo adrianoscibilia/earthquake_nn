@@ -14,6 +14,7 @@ from IPython.display import clear_output
 # NN model for earthquake damage evaluation
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 EPICENTER = [13.466489, 42.366599]
+TRAIN = False
 ORIGINAL_PROPERTIES = {'Latitude':{'mean': 42.316818950803125,
                                     'std': 0.13075990982450972,
                                     'max': 42.7362168,
@@ -195,7 +196,7 @@ def class_to_color(classes):
     # take the classes and map them to colors from the unique_values_dict
     colors = torch.zeros(classes.shape)
     for i, class_ in enumerate(classes):
-        colors[i] = unique_values_dict['sez4_danno_strutturale_strutture_verticali'][class_]
+        colors[i] = unique_values_dict['sez4_danno_strutturale_copertura'][class_]
     return colors.float().detach().cpu()
 
 
@@ -369,8 +370,73 @@ def study_dummy_columns(model, loader, unique_values_dict, PLOT=True, VERBOSE=Fa
             return scores
 
 
+
+def study_dummy_columns_gtruth(model, loader, unique_values_dict, PLOT=True, VERBOSE=False):
+    model.eval()
+    shapes = [len(v) for v in unique_values_dict.values()]
+
+    with torch.no_grad():
+        for data in loader:
+            inputs, labels = data
+            inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+            categorical_inputs = inputs[:, 2:]  # remove lat and long
+
+            scores = {key: {} for key in unique_values_dict.keys()}
+
+            for i, column in enumerate(unique_values_dict.keys()):  # for each column
+
+                if i != len(unique_values_dict.keys()) - 1:
+                    if VERBOSE:
+                        print('\n Column Name: ', column)
+                    offset = sum(shapes[:i])
+                    column_onehot = categorical_inputs[:, offset:offset + shapes[i]]
+                    dummy_categorical_signatures = categorical_inputs.clone()
+
+                    for j in range(column_onehot.shape[1]):  # for each unique value in the column
+                        if VERBOSE:
+                            print('Value Name:', unique_values_dict[column][j])
+                        dummy_onehot = torch.zeros_like(column_onehot)
+
+                        dummy_onehot[:, j] = 1
+                        dummy_categorical_signatures[:, offset:offset + shapes[i]] = dummy_onehot
+
+                        dummy_input = torch.cat((inputs[:, :2], dummy_categorical_signatures), dim=1)
+
+                        # calculate dummy output
+                        outputs = model(dummy_input)
+                        classes = torch.argmax(outputs, 1)
+
+                        # map classes to colors
+                        damages = class_to_color(classes)
+                        site_damage = torch.mean(damages)
+
+                        scores[column][unique_values_dict[column][j]] = site_damage.item()
+
+            if PLOT:
+                for column in scores.keys():
+                    fig, ax = plt.subplots()
+                    fig.set_figheight(5)
+                    fig.set_figwidth(20)
+
+                    # sort scores by value
+                    scores[column] = {k: v for k, v in sorted(scores[column].items(), key=lambda item: item[1])}
+
+                    # sort scores by key alphabetically
+                    # scores[column] = {k: v for k, v in sorted(scores[column].items(), key=lambda item: str(item[0]))}
+
+                    # plot scores
+                    for key in scores[column].keys():
+                        ax.bar(str(key), scores[column][key])
+                    ax.set_xlabel(column)
+                    ax.set_ylabel('Mean Damage')
+                    ax.set_title(f'Mean Damage for each value in {column}')
+                    plt.show()
+
+            return scores
+
+
 # dataframe = pd.read_csv('dataframe_signature.csv')
-dataframe = pd.read_pickle('./signature_scalar_condensed_dataframe_strutture_verticali_4cat.pkl')
+dataframe = pd.read_pickle('./signature_scalar_condensed_dataframe_copertura_4cat.pkl')
 
 dataset = CustomDataset(dataframe)
 train_dataset, test_dataset = dataset.train_test_split()
@@ -401,16 +467,21 @@ N_CLASSES = len(dataset[0][1])
 # turn ALPHA into all ones
 ALPHA = torch.ones(N_CLASSES).to(DEVICE)
 
-unique_values_dict = pickle.load(open('unique_values_dict_scalar_scores_strutture_verticali_4cat.pkl', 'rb'))
+unique_values_dict = pickle.load(open('unique_values_dict_scalar_scores_copertura_4cat.pkl', 'rb'))
 
 model = FullyConnectedNN(input_len=len(dataset[0][0]), output_len=len(dataset[0][1]), hidden_dim=25, depth=6)
 
 # model = pickle.load(open('model.pkl', 'rb'))
+if(TRAIN):
+    train(model, train_loader, test_loader, BalancedBCELoss(alpha=ALPHA), optim.Adam(model.parameters(), lr=0.001),
+          num_epochs=200, log_interval=200, PLOT_MAP = False , N_CLASSES=N_CLASSES)
 
-train(model, train_loader, test_loader, BalancedBCELoss(alpha=ALPHA), optim.Adam(model.parameters(), lr=0.001),
-      num_epochs=100, log_interval=100, PLOT_MAP = True, N_CLASSES=N_CLASSES)
+    # save model
+    pickle.dump(model, open('model_lr5_copertura_4cat.pkl', 'wb'))
 
-# save model
-pickle.dump(model, open('model_lr5_strutture_verticali_4cat.pkl', 'wb'))
+if not (TRAIN):
+    model = pickle.load(open('model_lr5_copertura_4cat.pkl', 'rb'))
 
-scores = study_dummy_columns(model, test_loader, unique_values_dict)
+    # plot_risk_map_unnormalized(model, test_loader)
+
+    scores = study_dummy_columns(model, test_loader, unique_values_dict)
