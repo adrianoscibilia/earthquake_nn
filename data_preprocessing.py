@@ -63,7 +63,7 @@ x_columns = ['coordinate_lat',
     # 'sez3_mista',
     'sez3_struttura_verticale_1',
     'sez2_numeropiani',
-    # 'sez3_catene_o_cordoli_1',
+    'sez3_catene_o_cordoli_1',
     'sez2_superficiepiano',
     # 'sez3_regolarita1',
     'sez3_pilastriisolati',
@@ -91,6 +91,11 @@ dataframe = pd.concat([dataframe_x, dataframe_y], axis=1)
 # print(len(dataframe.columns))
 # dataframe.head(20)
 
+# replace nan values within columns of interest
+dataframe['sez3_struttura_orizzontale_1'] = dataframe['sez3_struttura_orizzontale_1'].fillna('Non identificata')
+dataframe['sez3_catene_o_cordoli_1'] = dataframe['sez3_catene_o_cordoli_1'].fillna('no')
+dataframe[chosen_damage] = dataframe[chosen_damage].fillna('Danno Nullo')
+
 # %% # count nan in columns
 dataframe = dataframe.dropna()
 for column in dataframe.columns:
@@ -98,7 +103,6 @@ for column in dataframe.columns:
 
 condensed_categories = {
     'Danno Nullo': 'Danno Nullo',
-    'nan': 'Danno Nullo',
 
     'Danno D1 Leggero:<1/3': 'Danno Leggero',
     'Danno D1 Leggero:1/3-2/3': 'Danno Leggero',
@@ -128,64 +132,6 @@ condensed_categories = {
     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D1 Leggero:1/3-2/3': 'Danno Grave'
 }
 
-#
-# condensed_categories = {
-#     'Danno Nullo': 0,
-#     'nan': 0,
-#     'Danno D1 Leggero:<1/3': 1,
-#     'Danno D1 Leggero:1/3-2/3': 2,
-#     'Danno D2-D3 Medio-Grave:<1/3': 3,
-#     'Danno D1 Leggero:>2/3': 3,
-#     'Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:<1/3': 4,
-#     'Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:1/3-2/3': 5,
-#     'Danno D2-D3 Medio-Grave:1/3-2/3': 6,
-#     'Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:>2/3': 6,
-#     'Danno D2-D3 Medio-Grave:1/3-2/3, Danno D1 Leggero:<1/3': 7,
-#     'Danno D4-D5 Gravissimo:<1/3': 8,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D1 Leggero:<1/3': 9,
-#     'Danno D2-D3 Medio-Grave:>2/3': 9,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D1 Leggero:1/3-2/3': 10,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:<1/3': 11,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:<1/3': 12,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:1/3-2/3': 13,
-#     'Danno D4-D5 Gravissimo:1/3-2/3': 14,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:>2/3': 15,
-#     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D1 Leggero:1/3-2/3': 16,
-#     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D2-D3 Medio-Grave:<1/3': 17,
-#     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D2-D3 Medio-Grave:1/3-2/3': 18,
-#     'Danno D4-D5 Gravissimo:>2/3, Danno D1 Leggero:<1/3': 19,
-#     'Danno D4-D5 Gravissimo:>2/3, Danno D2-D3 Medio-Grave:<1/3': 19,
-#     'Danno D4-D5 Gravissimo:>2/3': 19
-# }
-
-# condensed_categories = {
-#     'Danno Nullo': 0,
-#     'nan': 0,
-#     'Danno D1 Leggero:<1/3': 1,
-#     'Danno D1 Leggero:1/3-2/3': 2,
-#     'Danno D2-D3 Medio-Grave:<1/3': 3,
-#     'Danno D1 Leggero:>2/3': 3,
-#     'Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:<1/3': 4,
-#     'Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:1/3-2/3': 4,
-#     'Danno D2-D3 Medio-Grave:1/3-2/3': 5,
-#     'Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:>2/3': 5,
-#     'Danno D2-D3 Medio-Grave:1/3-2/3, Danno D1 Leggero:<1/3': 5,
-#     'Danno D4-D5 Gravissimo:<1/3': 6,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D1 Leggero:<1/3': 7,
-#     'Danno D2-D3 Medio-Grave:>2/3': 7,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:>2/3': 7,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D1 Leggero:1/3-2/3': 8,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:<1/3': 8,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:<1/3, Danno D1 Leggero:<1/3': 8,
-#     'Danno D4-D5 Gravissimo:<1/3, Danno D2-D3 Medio-Grave:1/3-2/3': 8,
-#     'Danno D4-D5 Gravissimo:1/3-2/3': 9,
-#     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D1 Leggero:1/3-2/3': 9,
-#     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D2-D3 Medio-Grave:<1/3': 9,
-#     'Danno D4-D5 Gravissimo:1/3-2/3, Danno D2-D3 Medio-Grave:1/3-2/3': 9,
-#     'Danno D4-D5 Gravissimo:>2/3, Danno D1 Leggero:<1/3': 10,
-#     'Danno D4-D5 Gravissimo:>2/3, Danno D2-D3 Medio-Grave:<1/3': 10,
-#     'Danno D4-D5 Gravissimo:>2/3': 10}
-
 final_categories = {
     'Danno Nullo': 0,
     'Danno Leggero': 1,
@@ -193,12 +139,9 @@ final_categories = {
     'Danno Grave': 3
 }
 
-
 # map categories ###############################################################
-dataframe[chosen_damage] = dataframe[chosen_damage].map(
-    condensed_categories)
-dataframe[chosen_damage] = dataframe[chosen_damage].map(
-    final_categories)
+dataframe[chosen_damage] = dataframe[chosen_damage].map(condensed_categories)
+dataframe[chosen_damage] = dataframe[chosen_damage].map(final_categories)
 dataframe[chosen_damage].value_counts()
 
 unique_values_dict = {}
@@ -214,7 +157,7 @@ unique_values_dict[chosen_damage] = sorted(
     unique_values_dict[chosen_damage])
 
 # %% display unique values for each column and save as pkl
-print(unique_values_dict)
+# print(unique_values_dict)
 with open('unique_values_dict_scalar_scores_strutture_verticali_4cat.pkl', 'wb') as f:
     pickle.dump(unique_values_dict, f)
 
@@ -223,8 +166,7 @@ dataframe[y_columns[0]].unique()
 #Count types of damage
 dataframe[y_columns[0]].value_counts()
 
-
-# %% Various functions  to transform data into onehot encoding ##############################################################
+# %% Transform data into onehot encoding ##############################################################
 def find_unique_positions(column, x, unique_values_dict):
     return  list(unique_values_dict[column]).index(x)
 def int_to_onehot(column, x, unique_values_dict):
@@ -248,18 +190,95 @@ def numeric_to_onehot(dataframe, columns_exeptions = [], unique_values_dict = {}
 def onehot_to_signature(dataframe, Y_SIZE = Y_SIZE):
     signature_df = {'x':[], 'y':[]}
     for i in tqdm(range(len(dataframe))):
-        signature_x = [onehot for onehot in dataframe.iloc[i,:-Y_SIZE]]
-        signature_y = [onehot for onehot in dataframe.iloc[i,-Y_SIZE:]]
+        signature_x = [onehot for onehot in dataframe[i,:-Y_SIZE]]
+        signature_y = [onehot for onehot in dataframe[i,-Y_SIZE:]]
         signature_df['x'].append(flatten(signature_x))
         signature_df['y'].append(flatten(signature_y))
     return pd.DataFrame(signature_df)
 
 
 dataframe = turn_to_numeric(dataframe, columns_exeptions=coordinates_columns, unique_values_dict = unique_values_dict)
-dataframe = numeric_to_onehot(dataframe, columns_exeptions=coordinates_columns, unique_values_dict = unique_values_dict)
-dataframe = onehot_to_signature(dataframe)
 
-dataframe.to_pickle('signature_scalar_condensed_dataframe_strutture_verticali_4cat.pkl')
-# dataframe.to_csv('signature_scalar_condensed_dataframe_strutture_verticali.csv', index=False)
-# dataframe = pd.read_csv('signature_scalar_condensed_dataframe_strutture_verticali.csv')
+# ASSIGN VULNERABILITY CLASS TO EACH BUILDING IN THE CONDENSED DATASET
+vuln_df = pd.DataFrame(columns=['vulnerability_class'], index=dataframe.index)
+# vuln_df.set_index(dataframe.index)
+
+for i in dataframe.index:
+    if dataframe.sez3_struttura_verticale_1[i]==1:
+
+        if dataframe.sez3_struttura_orizzontale_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 2 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 2 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 3 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 3 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 4:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 5 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'  # SUPPOSIZIONE!! Volte con catene, senza catene, muratura cattiva qualità
+        if dataframe.sez3_struttura_orizzontale_1[i] == 5 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+
+    elif dataframe.sez3_struttura_verticale_1[i] == 0:
+
+        if dataframe.sez3_struttura_orizzontale_1[i] == 0 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 0 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'C1'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 2 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 2 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'C1'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 3 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 3 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 4 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 4 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 5 and dataframe.sez3_catene_o_cordoli_1[i] == 0:
+            vuln_df.vulnerability_class[i] = 'A'
+        if dataframe.sez3_struttura_orizzontale_1[i] == 5 and dataframe.sez3_catene_o_cordoli_1[i] == 1:
+            vuln_df.vulnerability_class[i] = 'B'
+
+    elif dataframe.sez3_struttura_verticale_1[i] == 4 or dataframe.sez3_struttura_verticale_1[i] == 6 \
+            or dataframe.sez3_struttura_verticale_1[i]==5 or dataframe.sez3_struttura_verticale_1[i] == 3:
+        if dataframe.sez2_costruzioneristrutturazione1[i] == 5:
+            vuln_df.vulnerability_class[i] = 'D2'
+        else:
+            vuln_df.vulnerability_class[i] = 'C2'
+
+    elif dataframe.sez3_struttura_verticale_1[i] == 2:
+        vuln_df.vulnerability_class[i] = 'Non identificata'
+
+    elif dataframe.sez3_struttura_verticale_1[i] == 7:
+        vuln_df.vulnerability_class[i] = 'D2'
+
+def turn_to_strings(dataframe, columns_exeptions = [], unique_values_dict = {}):
+    for column in dataframe.columns:
+        if column in columns_exeptions:
+            continue
+        print(column)
+        for idx in dataframe.index:
+            val = dataframe[column][idx]
+            dataframe[column][idx] = unique_values_dict[column][val]
+    return dataframe
+
+# dataframe = numeric_to_onehot(dataframe, columns_exeptions=coordinates_columns, unique_values_dict = unique_values_dict)
+# dataframe = onehot_to_signature(dataframe)
+
+dataframe_cathegorical = turn_to_strings(dataframe, columns_exeptions=coordinates_columns, unique_values_dict = unique_values_dict)
+
+dataframe_with_vuln = pd.concat([dataframe_cathegorical, vuln_df], axis=1)
+dataframe_with_vuln.to_pickle('dataframe_strutture_verticali_vuln.pkl')
+dataframe_with_vuln.to_excel('dataframe_strutture_verticali_vuln.xlsx')
 
